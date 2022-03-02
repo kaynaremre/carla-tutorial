@@ -91,9 +91,9 @@ try:
 
     vehicle = world.spawn_actor(bp, spawn_point)
 
-    #vehicle.set_autopilot(True)
+    vehicle.set_autopilot(True)
 
-    vehicle.apply_control(carla.VehicleControl(throttle=1.0, steer=0.0))
+    #vehicle.apply_control(carla.VehicleControl(throttle=1.0, steer=0.0))
     actor_list.append(vehicle)
 
     print("simstart")
@@ -113,16 +113,25 @@ try:
     cam_sensor = world.spawn_actor(cam_bp, spawn_point, attach_to=vehicle)
     actor_list.append(cam_sensor)
 
-    cam_sensor.listen(lambda data: process_img(data))
+    #cam_sensor.listen(lambda data: process_img(data))
+
+    obs_bp = blueprint_library.find("sensor.other.obstacle")
+    obs_bp.set_attribute("debug_linetrace", "True")
+
+    obs_sensor = world.spawn_actor(obs_bp, spawn_point, attach_to=vehicle)
+    actor_list.append(obs_sensor)
+
+
+    while True:
+        world.wait_for_tick(10.0)
+        world.tick()
+        world.get_spectator().set_transform(cam_sensor.get_transform())
 
 
 
-
-    time.sleep(10)
-
-
-    pass
 finally:
     for actor in actor_list:
         actor.destroy()
     print("All clened up")
+
+
