@@ -63,7 +63,6 @@ import glob
 import os
 import sys
 
-from gym import spec
 
 from examples.vehicle_gallery import get_transform
 
