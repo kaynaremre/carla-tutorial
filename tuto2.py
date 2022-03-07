@@ -46,7 +46,7 @@ class VehiclePIDController():
         control = carla.VehicleControl()
 
         if acceleration>=0.0:
-            control.throttle = min(abs(acceleration), self.max_throttle)
+            control.throttle = min(abs(acceleration), self.max_brake)
             control.brake = 0.0
 
         else:
@@ -101,7 +101,7 @@ class PIDLongitudinalontroller():
             de = 0.0
             ie = 0.0
 
-        return np.clip(self.K_P*error + self.K_D*de + self.K_I*ie, -1.0, 1,0)
+        return np.clip(self.K_P*error + self.K_D*de + self.K_I*ie, -1.0, 1.0)
 
     def run_step(self, target_speed):
         current_speed = get_speed(self.vehicle)
@@ -126,7 +126,7 @@ class PIDLateralController():
         return self.pid_controller(waypoint, self.vehicle.get_transform())
 
     def pid_controller(self, waypoint, vehicle_transform):
-        v_begin = vehicle_transform.Location
+        v_begin = vehicle_transform.location
         v_end = v_begin + carla.Location(x= math.cos(math.radians(vehicle_transform.rotation.yaw)))
         v_vec = np.array([v_end.x - v_begin.x, v_end.y - v_begin.y, 0.0])
 
@@ -149,7 +149,7 @@ class PIDLateralController():
             de = 0.0
             ie = 0.0
 
-        return np.clip((self.K_P*dot) + (self.K_I*ie) + (self.K_D*de))
+        return np.clip((self.K_P*dot) + (self.K_I*ie) + (self.K_D*de), -1.0, 1.0)
 
 
 
@@ -165,20 +165,31 @@ def main():
         map = world.get_map()
 
         blueprint_library = world.get_blueprint_library()
-        vehicle_bp = blueprint_library.filter('model3')[0]
+        vehicle_bp = blueprint_library.filter('cybertruck')[0]
 
         spawn_point = carla.Transform(carla.Location(x=-75.4, y=-1.0, z = 15), carla.Rotation(pitch=0, yaw= 180, roll=0))
+
+        spectator = world.get_spectator()
+
 
         vehicle = world.spawn_actor(vehicle_bp, spawn_point)
         actorList.append(vehicle)
 
-        control_vehicle = VehiclePIDController(vehicle, args_lateral={'K_P': 1, 'K_D': 0.0, 'K_I':0.0}, args_longitudinal={'K_P': 1, 'K_D': 0.0, 'K_I':0.0})
+        control_vehicle = VehiclePIDController(vehicle, args_lateral={'K_P': 1.0, 'K_D': 0.0, 'K_I':0.0}, args_longitudinal={'K_P': 1.0, 'K_D': 0.0, 'K_I':0.0})
+        
+        transform = vehicle.get_transform()
+        spectator.set_transform(transform)
+
 
 
         while True:
             waypoints = world.get_map().get_waypoint(vehicle.get_location())
+            print("asdf")
+
+
+
             waypoint = np.random.choice(waypoints.next(0.3))
-            control_signal = control_vehicle.run_step(5, waypoints)
+            control_signal = control_vehicle.run_step(10, waypoint)
             vehicle.apply_control(control_signal)
 
 
